@@ -6,6 +6,9 @@ Privilege escalation on aerohive devices
 - AP130
 - AP230
 
+# Requirements
+CLI access
+
 # How to
 
 ```
