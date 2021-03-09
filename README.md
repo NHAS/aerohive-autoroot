@@ -23,4 +23,4 @@ ssh root@10.0.0.1
 ```
 
 # How it works
-The Aerohive CLI has a flaw that allows code execution. Using this, it is possible to put a public key in the root users `.ssh/authorized_keys` file, and this gain full shell.
+The Aerohive CLI has a flaw that allows code execution. Using this, it is possible to put a public key in the root users `.ssh/authorized_keys` file, and thus gain full shell.
