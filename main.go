@@ -21,7 +21,7 @@ func check(err error) {
 }
 
 func printHelp() {
-	fmt.Println("usage: ", filepath.Base(os.Args[0]), "[--pubkey] [--shell] <device ip>")
+	fmt.Println("usage: ", filepath.Base(os.Args[0]), "[--pubkey] <device ip>")
 	fmt.Println("\t\t--pubkey\tPath to public key to write to device")
 }
 
@@ -29,7 +29,6 @@ func main() {
 	username := flag.String("u", "admin", "Username")
 	password := flag.String("p", "aerohive", "Password")
 	path := flag.String("pubkey", "", "Path to public key to enable on device")
-	flag.Bool("shell", false, "Spawn a root SH shell on the device")
 
 	flag.Usage = printHelp
 
