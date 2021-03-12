@@ -65,12 +65,6 @@ func main() {
 
 	flag.Parse()
 
-	if len(flag.Args()) != 1 {
-		fmt.Println("Missing target")
-		printHelp()
-		return
-	}
-
 	hasCliAccess := false
 	generateOnly := false
 	readOnly := false
@@ -85,6 +79,19 @@ func main() {
 		}
 	})
 
+	if generateOnly {
+		for _, v := range generatePasswords(*mac) {
+			fmt.Println(v)
+		}
+		return
+	}
+
+	if len(flag.Args()) != 1 {
+		fmt.Println("Missing target")
+		printHelp()
+		return
+	}
+
 	if hasCliAccess && (generateOnly || readOnly) {
 		log.Fatal("Incompatiable flags")
 	}
@@ -95,13 +102,6 @@ func main() {
 		}
 
 		restrictedShellRoot(*path, *username, *password)
-		return
-	}
-
-	if generateOnly {
-		for _, v := range generatePasswords(*mac) {
-			fmt.Println(v)
-		}
 		return
 	}
 
