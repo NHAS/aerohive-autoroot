@@ -182,6 +182,7 @@ func noAccess(port int) {
 
 	//As this has at max 1 million guesess there really isnt much reason to have a stop feature
 	var wg sync.WaitGroup
+	fmt.Printf("Started thread: ")
 	for i := 0; i < 10; i++ { // Make 10 threads and split up the password list between them
 		list := make([]string, len(passwords)/10)
 		for ii := i; ii < len(passwords); ii += 10 {
@@ -200,8 +201,9 @@ func noAccess(port int) {
 			wg.Done()
 		}(list)
 
-		fmt.Println("Started thread: ", i)
+		fmt.Printf("%d ", i)
 	}
+	fmt.Printf("\nCracking...\n")
 
 	wg.Wait()
 	log.Println("Finished")
