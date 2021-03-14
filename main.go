@@ -172,6 +172,7 @@ func noAccess(port int) {
 		}
 	}
 
+	//Fix their terrible mac format
 	mac = mac[:2] + ":" + mac[2:7] + ":" + mac[7:9] + mac[9:12] + ":" + mac[12:]
 	fmt.Println("Got mac address as: ", mac)
 	fmt.Printf("Generating passwords...")
@@ -179,8 +180,9 @@ func noAccess(port int) {
 	check(err)
 	fmt.Printf("Done\n")
 
+	//As this has at max 1 million guesess there really isnt much reason to have a stop feature
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10; i++ { // Make 10 threads and split up the password list between them
 		list := make([]string, len(passwords)/10)
 		for ii := i; ii < len(passwords); ii += 10 {
 			list = append(list, passwords[ii])
