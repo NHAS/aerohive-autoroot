@@ -58,6 +58,10 @@ The readfile functionality requires you to have access to the web portal on the 
 Some other work done on these devices can be found here: https://github.com/eriknl/CVE-2020-16152
 This utilises another PHP bug to gain immediate shell execution on the device. 
 
+
+# Limitations
+- Currently works on up to firmware 10.0r7a, at this point the auth has changed. And I havent yet worked out a way around it.
+
 # Todo
 
 - Test all the things
