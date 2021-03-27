@@ -60,7 +60,10 @@ This utilises another PHP bug to gain immediate shell execution on the device.
 
 
 # Limitations
-- Currently works on up to firmware 10.0r7a, at this point the auth has changed. And I havent yet worked out a way around it.
+If no user has ever logged into the web interface this will not work. Due to the authorisation essentially relying on a "is this file on the filesystem". 
+If this file doesnt exist, then it isnt possible to initalise the php modules that have serious vulnerabilities. 
+
+
 
 # Todo
 
