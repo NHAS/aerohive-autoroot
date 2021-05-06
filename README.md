@@ -60,11 +60,5 @@ This utilises another PHP bug to gain immediate shell execution on the device.
 
 
 # Limitations
-If no user has ever logged into the web interface this will not work. Due to the authorisation essentially relying on a "is this file on the filesystem". 
+On the newer firmware versions, If no user has ever logged into the web interface the web exploits will not work. Due to the authorisation essentially relying on a "is this file on the filesystem". 
 If this file doesnt exist, then it isnt possible to initalise the php modules that have serious vulnerabilities. 
-
-
-
-# Todo
-
-- Test all the things
