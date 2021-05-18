@@ -1,5 +1,5 @@
 # aerohive-autoroot
-Privilege escalation on aerohive devices
+Remote code injection and privilege escalation on Aerohive devices.
 
 # Tested devices
 
@@ -7,10 +7,16 @@ Privilege escalation on aerohive devices
 - AP230
 - AP330
 
-# Requirements
-Network access to the device
+# Tested Firmware
 
-# How do
+- 10.0r9b and below
+
+# Requirements
+For older <10.0 firmware all that is required is network access to the device and the ability to connect to the management interface which typically runs on port 443.
+
+For newer devices, a valid user needs to have logged in at least once to create a valid session file on the device. But it will work up until 10.0r9. 
+
+# Instructions
 
 This tool has a number of modes and tools that allow for manual access. Shown below is the help output.
 
@@ -33,11 +39,11 @@ usage:  aerohive-autoroot [options] <device ip>
 ```
 
 
-If you have acess to a restricted shell on the device, it is possible to gain full ssh access by dropping a public key into the `/root/.ssh` folder.
+If you have access to a restricted shell on the device, it is possible to gain full root `/bin/sh` access by dropping a public key into the `/root/.ssh` folder.
 You'd do this in the tool by the following:
 
 ```
-aerohive-autoroot --rcli --pubkey ~/.ssh/id_ed25519 192.168.1.1
+aerohive-autoroot --rcli --pubkey ~/.ssh/id_ed25519 192.168.1.1:22
 ```
 This would default to using the default username/password `admin`/`aerohive`.  
   
@@ -54,9 +60,6 @@ Other tools you can use are the `generate` and `readfile` functionalities.
 Generate allows you to generate a list of possible passwords for the service accounts, if you have the mac address. I found it wasnt feasible to bruteforce the OpenSSH, due to you still having to attempt 1 million guesses. 
 
 The readfile functionality requires you to have access to the web portal on the device, and will allow you to read any file off the device (as the web server is running as root).
-
-Some other work done on these devices can be found here: https://github.com/eriknl/CVE-2020-16152
-This utilises another PHP bug to gain immediate shell execution on the device. 
 
 
 # Limitations
