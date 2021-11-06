@@ -8,8 +8,6 @@ tags: [IoT, Aerohive, Exploits]
 excerpt: "Learn how to write your own firmware for aerohive devices! With a bonus side order of some remote code execution!"
 ---
 
-{% include toc.html %}
-
 # 1. Overview & Background
 Aerohive are a manufacturer of enterprise wireless networking equipment.
  
@@ -22,7 +20,7 @@ They've since been acquired by ExtremeNetworks.
 Typically you'll see their devices hanging from the ceiling and generally looking like a wireless access point, personally I've seen them around quite a bit on commercial premises and they seem to be especially popular in schools.
 
 <p align="center">
-  <img width="50%" src="/images/aerohive/ap130.jpeg" />
+  <img width="50%" src="ap130.jpeg" />
 </p>
 
 
