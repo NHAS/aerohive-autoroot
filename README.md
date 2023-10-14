@@ -6,6 +6,7 @@ Remote code injection and privilege escalation on Aerohive devices.
 - AP130
 - AP230
 - AP330
+- AP650
 
 # Tested Firmware
 
